@@ -1,2 +1,2 @@
 # rust_dev_course
-Lesson 01: [Simple "Hello, user" project with use of colored crate](lesson-01/src/main.rs)
+Lesson 01: [Simple "Hello, user" project with colored terminal output](lesson-01/src/main.rs)
