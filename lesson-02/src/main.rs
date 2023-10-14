@@ -1,11 +1,6 @@
 use slug::slugify;
 use std::env;
 
-// simple function for reversing a string
-fn reverse(input: &str) -> String {
-    input.chars().rev().collect()
-}
-
 // function that applies ROT13 transformation to alphabetic chars while leaving other chars unchanged
 fn rot13(input: &str) -> String {
     input
@@ -42,7 +37,7 @@ fn main() {
         "uppercase" => text.to_uppercase(),
         "no-spaces" => text.replace(' ', ""),
         "slugify" => slugify(text),
-        "reverse" => reverse(text),
+        "reverse" => text.chars().rev().collect(),
         "rot13" => rot13(text),
         _ => {
             eprintln!("Error: unknown modifier {}", modifier);
