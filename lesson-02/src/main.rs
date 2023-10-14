@@ -4,7 +4,7 @@ use std::env;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    // Check if there are 2 CLI arguments
+    // Check if there is correct number of CLI arguments
     if args.len() != 3 {
         println!("Correct input format: Cargo run <text> <modifier>");
         println!(
