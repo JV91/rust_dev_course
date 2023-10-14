@@ -1,4 +1,4 @@
-use colored::Colorize; // zaznamenal jsem na 3. prednasce chybu - neimportovat cely crate (::*), ale jen to, co pouzivam! 
+use colored::Colorize; // pozn. z prednasky - neimportovat cely crate (::*), ale jen to, co chci pouzit
 use std::io;
 
 fn get_user_input(prompt: &str) -> String {
