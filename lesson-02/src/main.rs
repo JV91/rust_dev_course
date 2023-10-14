@@ -1,43 +1,6 @@
 use slug::slugify;
 use std::env;
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    // Check if there is correct number of CLI arguments
-    if args.len() != 3 {
-        println!("Correct input format: Cargo run <text> <modifier>");
-        println!(
-            "Valid <modifier> values are: lowercase, uppercase, no-spaces, slugify, reverse, rot13"
-        );
-        return;
-    }
-
-    let text = &args[1];
-    let modifier = &args[2];
-
-    let modified_text = match modifier.as_str() {
-        "lowercase" => text.to_lowercase(),
-        "uppercase" => text.to_uppercase(),
-        "no-spaces" => text.replace(' ', ""),
-        "slugify" => slugify(text),
-        "reverse" => reverse(text),
-        "rot13" => rot13(text),
-        _ => {
-            println!("Unknown modifier: {}", modifier);
-            println!(
-                "Valid <modifier> values are: lowercase, uppercase, no-spaces, slugify, reverse, rot13"
-            );
-            return;
-        }
-    };
-
-    println!(
-        "Output string with '{}' modifier: {}",
-        modifier, modified_text
-    );
-}
-
 // simple function for reversing a string
 fn reverse(input: &str) -> String {
     input.chars().rev().collect()
@@ -56,4 +19,42 @@ fn rot13(input: &str) -> String {
             }
         })
         .collect()
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    // Check if there is correct number of CLI arguments
+    if args.len() != 3 {
+        eprintln!("Error: invalid number of arguments");
+        eprintln!("Correct input format: Cargo run <text> <modifier>");
+        eprintln!(
+            "Valid <modifier> values are: lowercase, uppercase, no-spaces, slugify, reverse, rot13"
+        );
+        std::process::exit(1);
+    }
+
+    let text = &args[1];
+    let modifier = &args[2];
+
+    let modified_text = match modifier.as_str() {
+        "lowercase" => text.to_lowercase(),
+        "uppercase" => text.to_uppercase(),
+        "no-spaces" => text.replace(' ', ""),
+        "slugify" => slugify(text),
+        "reverse" => reverse(text),
+        "rot13" => rot13(text),
+        _ => {
+            eprintln!("Error: unknown modifier {}", modifier);
+            eprintln!(
+                "Valid <modifier> values: lowercase, uppercase, no-spaces, slugify, reverse, rot13"
+            );
+            std::process::exit(1);
+        }
+    };
+
+    println!(
+        "Output string with '{}' modifier: {}",
+        modifier, modified_text
+    );
 }
