@@ -1,5 +1,5 @@
 use slug::slugify;
-use std::env;
+use std::{env, process::exit};
 
 // function that applies ROT13 transformation to alphabetic chars while leaving other chars unchanged
 fn rot13(input: &str) -> String {
@@ -26,7 +26,7 @@ fn main() {
         eprintln!(
             "Valid <modifier> values are: lowercase, uppercase, no-spaces, slugify, reverse, rot13"
         );
-        std::process::exit(1);
+        exit(1);
     }
 
     let text = &args[1];
@@ -44,7 +44,7 @@ fn main() {
             eprintln!(
                 "Valid <modifier> values: lowercase, uppercase, no-spaces, slugify, reverse, rot13"
             );
-            std::process::exit(1);
+            exit(1);
         }
     };
 
