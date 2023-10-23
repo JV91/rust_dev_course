@@ -29,8 +29,8 @@ fn main() {
         exit(1);
     }
 
-    let text = &args[1];
-    let modifier = &args[2];
+    let modifier = &args[1];
+    let text = &args[2];
 
     let modified_text = match modifier.as_str() {
         "lowercase" => text.to_lowercase(),
