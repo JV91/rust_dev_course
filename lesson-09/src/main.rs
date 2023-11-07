@@ -1,3 +1,5 @@
+// NOTE: this assignment is not yet finished and needs some more work. I will update soon.
+
 use std::error::Error;
 use std::fmt;
 use std::io::Write;
