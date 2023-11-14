@@ -145,7 +145,7 @@ impl TextModifier {
             .delimiter(b';')
             .from_reader(input.as_bytes());
         let records = reader.records().collect::<Result<Vec<_>, _>>()?;
-        
+
         let headers: Vec<String> = records
             .get(0)
             .ok_or_else(|| "CSV must have at least one row".to_string())?
@@ -190,10 +190,10 @@ fn interactive_mode(tx: Sender<String>) {
             eprintln!("Error sending message through channel: {}", err);
         }
 
-        /* TO REMEMBER: 
+        /* TO REMEMBER:
             - io::stdout.flush() method is used on the standard output stream handle. It flushes the internal buffer, ensuring that any data we've written so far is sent to the console.
-            - io::stdin() returns a handle to the standard input stream, allowing us to read user input from the console. 
-            - .read_line(&mut input) reads a line from the standard input and appends it to the provided String variable input. 
+            - io::stdin() returns a handle to the standard input stream, allowing us to read user input from the console.
+            - .read_line(&mut input) reads a line from the standard input and appends it to the provided String variable input.
             - .send(input.trim().to_string()) sends the trimmed and converted input string through the channel.
         */
     }
@@ -226,12 +226,10 @@ fn processing_thread(rx: Receiver<String>) {
         };
 
         match modifier_str.parse::<Modifier>() {
-            Ok(modifier) => {
-                match execute_operation(modifier, text) {
-                    Ok(result) => println!("{}", result),
-                    Err(err) => eprintln!("{}", err),
-                }
-            }
+            Ok(modifier) => match execute_operation(modifier, text) {
+                Ok(result) => println!("{}", result),
+                Err(err) => eprintln!("{}", err),
+            },
             Err(_) => {
                 eprintln!("Unknown modifier. Valid modifiers: lowercase, uppercase, no-spaces, slugify, reverse, rot13, csv");
             }
