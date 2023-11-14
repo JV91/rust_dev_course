@@ -15,7 +15,7 @@ impl fmt::Display for OperationError {
 impl Error for OperationError {}
 
 // Csv struct to store headers and rows
-pub struct Csv {
+struct Csv {
     headers: Vec<String>,
     rows: Vec<Vec<String>>,
 }
@@ -28,9 +28,9 @@ impl fmt::Display for Csv {
             .headers
             .iter()
             .enumerate()
-            .map(|(i, header)| {
+            .map(|(e, header)| {
                 iter::once(header.len())
-                    .chain(self.rows.iter().map(|row| row[i].len()))
+                    .chain(self.rows.iter().map(|row| row[e].len()))
                     .max()
                     .unwrap()
             })
