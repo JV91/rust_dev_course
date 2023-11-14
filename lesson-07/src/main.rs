@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use std::str::FromStr;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
-use std::{env, error::Error, fmt, fs, process::exit};
+use std::{env, error::Error, fmt, fs, iter, process::exit};
 
 // Custom Error type for the operations
 #[derive(Debug)]
@@ -25,19 +25,55 @@ struct Csv {
     rows: Vec<Vec<String>>,
 }
 
-// Implementing the Display trait for Csv
+// Implementing the Display trait for Csv from: https://doc.rust-lang.org/std/fmt/trait.Display.html#examples
 impl fmt::Display for Csv {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Calculate maximum width for each column
+        let max_widths: Vec<usize> = self
+            .headers
+            .iter()
+            .enumerate()
+            .map(|(i, header)| {
+                iter::once(header.len())
+                    .chain(self.rows.iter().map(|row| row[i].len()))
+                    .max()
+                    .unwrap()
+            })
+            .collect();
+
+        //println!("\n ${:?} \n", &max_widths);
+
+        println!("\nCSV output: \n");
+
         // Display headers
-        writeln!(f, "| {} |", self.headers.join(" | "))?;
+        write_row(f, &self.headers, &max_widths)?;
+
         // Display separator line
-        writeln!(f, "|{}|", "-".repeat(self.headers.len() * 3 - 1))?;
-        // Display rows
+        write_separator(f, &max_widths)?;
+
+        // Dispaly rows
         for row in &self.rows {
-            writeln!(f, "| {} |", row.join(" | "))?;
+            write_row(f, row, &max_widths)?;
         }
+
         Ok(())
     }
+}
+
+fn write_row(f: &mut fmt::Formatter<'_>, row: &[String], max_widths: &[usize]) -> fmt::Result {
+    write!(f, "| ")?;
+    for (field, &width) in row.iter().zip(max_widths) {
+        write!(f, "{:<width$} | ", field, width = width)?;
+    }
+    writeln!(f)
+}
+
+fn write_separator(f: &mut fmt::Formatter<'_>, max_widths: &[usize]) -> fmt::Result {
+    write!(f, "|")?;
+    for &width in max_widths {
+        write!(f, "{:-<width$}|", "", width = width + 2)?;
+    }
+    writeln!(f)
 }
 
 #[derive(Debug)]
@@ -108,6 +144,7 @@ impl TextModifier {
     pub fn parse_csv(input: &str) -> Result<Csv, Box<dyn Error>> {
         let mut reader = ReaderBuilder::new()
             .has_headers(false) // default value is true and then we miss the first row (headers)
+            .delimiter(b';')
             .from_reader(input.as_bytes());
         let records = reader.records().collect::<Result<Vec<_>, _>>()?;
         
