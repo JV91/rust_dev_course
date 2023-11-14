@@ -1,6 +1,6 @@
 use csv::ReaderBuilder;
 use slug::slugify;
-use std::{env, error::Error, fmt, process::exit};
+use std::{env, error::Error, fmt, iter, process::exit};
 
 // Custom Error type for the operations
 #[derive(Debug)]
@@ -15,7 +15,7 @@ impl fmt::Display for OperationError {
 impl Error for OperationError {}
 
 // Csv struct to store headers and rows
-struct Csv {
+pub struct Csv {
     headers: Vec<String>,
     rows: Vec<Vec<String>>,
 }
@@ -23,16 +23,52 @@ struct Csv {
 // Implementing the Display trait for Csv from: https://doc.rust-lang.org/std/fmt/trait.Display.html#examples
 impl fmt::Display for Csv {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Calculate maximum width for each column
+        let max_widths: Vec<usize> = self
+            .headers
+            .iter()
+            .enumerate()
+            .map(|(i, header)| {
+                iter::once(header.len())
+                    .chain(self.rows.iter().map(|row| row[i].len()))
+                    .max()
+                    .unwrap()
+            })
+            .collect();
+
+        //println!("\n ${:?} \n", &max_widths);
+
+        println!("\nCSV output: \n");
+
         // Display headers
-        writeln!(f, "| {} |", self.headers.join(" | "))?;
+        write_row(f, &self.headers, &max_widths)?;
+
         // Display separator line
-        writeln!(f, "|{}|", "-".repeat(self.headers.len() * 3 - 1))?;
-        // Display rows
+        write_separator(f, &max_widths)?;
+
+        // Dispaly rows
         for row in &self.rows {
-            writeln!(f, "| {} |", row.join(" | "))?;
+            write_row(f, row, &max_widths)?;
         }
+
         Ok(())
     }
+}
+
+fn write_row(f: &mut fmt::Formatter<'_>, row: &[String], max_widths: &[usize]) -> fmt::Result {
+    write!(f, "| ")?;
+    for (field, &width) in row.iter().zip(max_widths) {
+        write!(f, "{:<width$} | ", field, width = width)?;
+    }
+    writeln!(f)
+}
+
+fn write_separator(f: &mut fmt::Formatter<'_>, max_widths: &[usize]) -> fmt::Result {
+    write!(f, "|")?;
+    for &width in max_widths {
+        write!(f, "{:-<width$}|", "", width = width + 2)?;
+    }
+    writeln!(f)
 }
 
 struct TextModifier;
