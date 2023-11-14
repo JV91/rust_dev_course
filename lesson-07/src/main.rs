@@ -41,8 +41,6 @@ impl fmt::Display for Csv {
             })
             .collect();
 
-        //println!("\n ${:?} \n", &max_widths);
-
         println!("\nCSV output: \n");
 
         // Display headers
