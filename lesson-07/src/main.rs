@@ -33,9 +33,9 @@ impl fmt::Display for Csv {
             .headers
             .iter()
             .enumerate()
-            .map(|(i, header)| {
+            .map(|(e, header)| {
                 iter::once(header.len())
-                    .chain(self.rows.iter().map(|row| row[i].len()))
+                    .chain(self.rows.iter().map(|row| row[e].len()))
                     .max()
                     .unwrap()
             })
