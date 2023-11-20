@@ -1,0 +1,8 @@
+{
+  "rust-analyzer.linkedProjects": [
+    ".\\lesson-09\\chatapp_client\\Cargo.toml",
+    ".\\lesson-09\\chatapp_server\\Cargo.toml",
+    ".\\lesson-09\\chatapp_server\\Cargo.toml"
+  ],
+  "rust-analyzer.showUnlinkedFileNotification": false
+}
