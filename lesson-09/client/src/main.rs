@@ -3,10 +3,9 @@ use std::{
   error::Error,
   fmt,
   fs::File,
-  io::{self, BufRead, BufReader, Write},
+  io::{self, Read, Write},
   net::TcpStream,
   process,
-  time::SystemTime,
 };
 
 use serde_derive::{Deserialize, Serialize};
@@ -27,21 +26,22 @@ impl Error for OperationError {}
 #[derive(Serialize, Deserialize, Debug)]
 enum MessageType {
   File(String),
-  Image(String),
+  Image(Vec<u8>),
   Text(String),
   Quit,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
   let args: Vec<String> = env::args().collect();
-
-  if args.len() != 3 {
-      println!("Usage: {} <hostname> <port>", args[0]);
+  
+  let (hostname, port) = match args.len() {
+    1 => ("localhost".to_string(), 11111), // Defaul values
+    3 => (args[1].clone(), args[2].parse().unwrap()),
+    _ => {
+      println!("Usage: {} [hostname] [port]", args[0]);
       process::exit(1);
-  }
-
-  let hostname = &args[1];
-  let port: u16 = args[2].parse()?;
+    }
+  };
 
   let server_address = format!("{}:{}", hostname, port);
   let mut stream = TcpStream::connect(server_address.clone())?;
@@ -58,11 +58,12 @@ fn main() -> Result<(), Box<dyn Error>> {
           _ => {
               if input.starts_with(".file") {
                   let path = input.trim_start_matches(".file").trim();
-                  MessageType::File(path.to_string())
-              } else if input.starts_with(".image") {
+                  send_file(&mut stream, path)?;
+                  continue; // Spim message sending for file uploads
+                } else if input.starts_with(".image") {
                   let path = input.trim_start_matches(".image").trim();
-                  println!("path: {}", &path);
-                  MessageType::Image(path.to_string())
+                  let image_content = read_image(path)?;
+                  MessageType::Image(image_content)
               } else {
                   MessageType::Text(input.trim().to_string())
               }
@@ -71,7 +72,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
       // Serialize and send the message to the server
       let serialized_message = bincode::serialize(&message)?;
-      println!("serialized_message: {:?}", &serialized_message);
+      // DEBUG: 
+      // println!("serialized_message: {:?}", &serialized_message);
       stream.write_all(&serialized_message)?;
 
       // If the user wants to quit, break the loop
@@ -79,6 +81,28 @@ fn main() -> Result<(), Box<dyn Error>> {
           break;
       }
   }
+
+  Ok(())
+}
+
+
+// Helper function to read image content
+fn read_image(path: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+  let mut file = File::open(path)?;
+  let mut content = Vec::new();
+  file.read_to_end(&mut content)?;
+  Ok(content)
+}
+
+// Helper function to send a file to the server
+fn send_file(stream: &mut TcpStream, path: &str) -> Result<(), Box<dyn Error>> {
+  let mut file = File::open(path)?;
+  let mut content = Vec::new();
+  file.read_to_end(&mut content)?;
+
+  let message = MessageType::File(path.to_string());
+  let serialized_message = bincode::serialize(&message)?;
+  stream.write_all(&serialized_message)?;
 
   Ok(())
 }
