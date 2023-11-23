@@ -13,7 +13,6 @@ use std::{
 };
 
 use serde_derive::{Deserialize, Serialize};
-//use bincode::{deserialize, serialize};
 
 // Custom Error type for the operations
 #[derive(Debug)]
@@ -26,8 +25,6 @@ impl fmt::Display for OperationError {
 }
 
 impl Error for OperationError {}
-
-////
 
 // Define message types using serde serialization
 #[derive(Serialize, Deserialize, Debug)]
@@ -69,7 +66,7 @@ impl Server {
     }
 
     fn handle_client(&self, mut stream: TcpStream, clients: &mut HashMap<SocketAddr, TcpStream>) {
-        if let Some(message) = receive_message(&mut stream){
+        if let Some(message) = receive_message(&mut stream) {
             // Deserialize received data
             //let message: MessageType = bincode::deserialize(&buffer)?;
 
