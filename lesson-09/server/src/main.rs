@@ -1,4 +1,4 @@
-// TODO: this assignment still needs some work on data reading from client - will get to it soon hopefully.
+// TODO: this assignment still needs some work on data reading from client - in progress.
 
 use std::{
     collections::HashMap,
@@ -70,15 +70,17 @@ impl Server {
             // Deserialize received data
             //let message: MessageType = bincode::deserialize(&buffer)?;
 
+            //println!("clients: {:?}", &clients);
+
             match message {
-                MessageType::File(filename, content) => {
-                    self.receive_file(&filename, &content, "files/");
+                MessageType::File(ref filename, ref content) => {
+                    self.receive_file(&filename, &content, "../files/");
                 }
-                MessageType::Image(content) => {
+                MessageType::Image(ref content) => {
                     println!("Received image");
-                    self.receive_file("received_image", &content, "images/");
+                    self.receive_file("received_image", &content, "../images/");
                 }
-                MessageType::Text(text) => {
+                MessageType::Text(ref text) => {
                     println!("Received text message: {}", text);
                 }
                 MessageType::Quit => {
@@ -86,6 +88,8 @@ impl Server {
                     println!("Client disconnected");
                 }
             }
+
+            println!("Received message: {:?}", message);
         } else {
             // Handle the case ehwn receive_message returns None (error reading from the stream)
             println!("Error receiving message from client");
@@ -114,6 +118,13 @@ fn receive_message(mut stream: &TcpStream) -> Option<MessageType> {
     }
     let len = u32::from_be_bytes(len_bytes) as usize;
 
+    println!("Received message length: {}", len); // Debug
+
+    if len == 0 {
+        println!("Empty message received"); // Debug
+        return None;
+    }
+
     let mut buffer = vec![0u8; len];
     if let Err(err) = stream.read_exact(&mut buffer) {
         eprintln!("Error reading message content: {}", err);
@@ -121,7 +132,10 @@ fn receive_message(mut stream: &TcpStream) -> Option<MessageType> {
     }
 
     match bincode::deserialize(&buffer) {
-        Ok(message) => Some(message),
+        Ok(message) => {
+            println!("Received message: {:?}", message); // Debug
+            Some(message)
+        }
         Err(err) => {
             eprintln!("Error deserializing message: {}", err);
             None

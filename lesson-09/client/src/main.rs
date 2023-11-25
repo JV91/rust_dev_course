@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if input.starts_with(".file") {
                     let path = input.trim_start_matches(".file").trim();
                     send_file(&mut stream, path)?;
-                    continue; // Spim message sending for file uploads
+                    continue;
                 } else if input.starts_with(".image") {
                     let path = input.trim_start_matches(".image").trim();
                     let image_content = read_image(path)?;
@@ -73,7 +73,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Serialize and send the message to the server
         let serialized_message = bincode::serialize(&message)?;
         // DEBUG:
-        // println!("serialized_message: {:?}", &serialized_message);
+        println!("serialized_message: {:?}", &serialized_message);
+        //
         stream.write_all(&serialized_message)?;
 
         // If the user wants to quit, break the loop
@@ -102,6 +103,10 @@ fn send_file(stream: &mut TcpStream, path: &str) -> Result<(), Box<dyn Error>> {
     let message = MessageType::File(path.to_string());
     let serialized_message = bincode::serialize(&message)?;
     stream.write_all(&serialized_message)?;
+    // DEBUG:
+    // Print success message to the command line
+    println!("File '{}' successfully sent to the server", path);
+    //
 
     Ok(())
 }
