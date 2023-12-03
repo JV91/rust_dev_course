@@ -10,27 +10,7 @@ use std::{
 
 use image::ImageOutputFormat;
 use serde_derive::{Deserialize, Serialize};
-
-// Custom Error type for the operations
-#[derive(Debug)]
-struct OperationError(String);
-
-impl fmt::Display for OperationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Operation Error: {}", self.0)
-    }
-}
-
-impl Error for OperationError {}
-
-// Define message types using serde serialization
-#[derive(Serialize, Deserialize, Debug)]
-enum MessageType {
-    File(String, Vec<u8>), // Filename and its content as bytes
-    Image(Vec<u8>),
-    Text(String),
-    Quit,
-}
+use shared::{MessageType, OperationError, send_file, send_message, read_and_convert_image};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
@@ -112,7 +92,7 @@ fn send_file(stream: &mut TcpStream, path: &str) -> Result<(), Box<dyn Error>> {
     let mut content = Vec::new();
     file.read_to_end(&mut content)?;
 
-    let message = MessageType::File(path.to_string(), content);
+    let message = MessageType::File(path.to_string());
     let serialized_message = bincode::serialize(&message)?;
     stream.write_all(&serialized_message)?;
     // DEBUG:

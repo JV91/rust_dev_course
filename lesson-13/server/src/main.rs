@@ -1,8 +1,9 @@
+// TODO: this assignment still needs some work on data reading from client - in progress.
+
 use std::{
     collections::HashMap,
     env,
     error::Error,
-    fmt,
     fs::File,
     io::{Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
@@ -10,28 +11,8 @@ use std::{
     time::SystemTime,
 };
 
-use serde_derive::{Deserialize, Serialize};
-
-// Custom Error type for the operations
-#[derive(Debug)]
-struct OperationError(String);
-
-impl fmt::Display for OperationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Operation Error: {}", self.0)
-    }
-}
-
-impl Error for OperationError {}
-
-// Define message types using serde serialization
-#[derive(Serialize, Deserialize, Debug)]
-enum MessageType {
-    Text(String),
-    Image(Vec<u8>),
-    File(String, Vec<u8>), // Filename and its content as bytes
-    Quit,
-}
+// use serde_derive::{Deserialize, Serialize};
+use shared::{MessageType};
 
 struct Server {
     address: Option<String>,
@@ -65,16 +46,20 @@ impl Server {
 
     fn handle_client(&self, mut stream: TcpStream, clients: &mut HashMap<SocketAddr, TcpStream>) {
         if let Some(message) = receive_message(&mut stream) {
-            match &message {
-                MessageType::File(filename, content) => {
-                    println!("I am in file block!");
-                    self.receive_file(&message, "../files/");
+            // Deserialize received data
+            //let message: MessageType = bincode::deserialize(&buffer)?;
+
+            //println!("clients: {:?}", &clients);
+
+            match message {
+                MessageType::File(ref filename, ref content) => {
+                    self.receive_file(&filename, &content, "../files/");
                 }
-                MessageType::Image(content) => {
+                MessageType::Image(ref content) => {
                     println!("Received image");
-                    self.receive_file(&message, "../images/");
+                    self.receive_file("received_image", &content, "../images/");
                 }
-                MessageType::Text(text) => {
+                MessageType::Text(ref text) => {
                     println!("Received text message: {}", text);
                 }
                 MessageType::Quit => {
@@ -82,26 +67,25 @@ impl Server {
                     println!("Client disconnected");
                 }
             }
-    
+
             println!("Received message: {:?}", message);
         } else {
+            // Handle the case ehwn receive_message returns None (error reading from the stream)
             println!("Error receiving message from client");
         }
     }
 
-    fn receive_file(&self, message: &MessageType, directory: &str) {
-        if let MessageType::File(filename, content) = message {
-            let timestamp = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
-            let filepath = format!("{}{}_{}", directory, timestamp, filename);
+    fn receive_file(&self, filename: &str, content: &[u8], directory: &str) {
+        let timestamp = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let filepath = format!("{}{}_{}", directory, timestamp, filename);
 
-            let mut file = File::create(&filepath).unwrap();
-            file.write_all(&content).unwrap();
+        let mut file = File::create(&filepath).unwrap();
+        file.write_all(content).unwrap();
 
-            println!("Received file: {}", filepath);
-        }
+        println!("Received file: {}", filepath);
     }
 }
 
@@ -113,10 +97,10 @@ fn receive_message(mut stream: &TcpStream) -> Option<MessageType> {
     }
     let len = u32::from_be_bytes(len_bytes) as usize;
 
-    println!("Received message length: {}", len);
+    println!("Received message length: {}", len); // Debug
 
     if len == 0 {
-        println!("Empty message received");
+        println!("Empty message received"); // Debug
         return None;
     }
 
@@ -128,7 +112,7 @@ fn receive_message(mut stream: &TcpStream) -> Option<MessageType> {
 
     match bincode::deserialize(&buffer) {
         Ok(message) => {
-            println!("Received message: {:?}", message);
+            println!("Received message: {:?}", message); // Debug
             Some(message)
         }
         Err(err) => {
@@ -142,8 +126,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     let address = match args.len() {
-        1 => None,
-        2 if args[1] == "0.0.0.0" => Some("0.0.0.0:11111".to_string()),
+        1 => None, // Defaul behaviour - bind to localhost
+        2 if args[1] == "0.0.0.0" => Some("0.0.0.0:11111".to_string()), // Bind to any IP
         3 => Some(format!("{}:{}", args[1], args[2])),
         _ => {
             println!("Usage: {} [hostname] [port]", args[0]);
