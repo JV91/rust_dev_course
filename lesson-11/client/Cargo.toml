@@ -11,6 +11,7 @@ serde = "1.0"
 serde_derive = "1.0.193"
 log = "0.4.20"
 tracing-subscriber = "0.3.18"
+clap = "2.33.0"
 
 [[bin]]
 name = "client"

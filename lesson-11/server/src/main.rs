@@ -1,48 +1,55 @@
-// server/src/main.rs
 use std::{
     collections::HashMap,
+    env,
     fs::File,
     io::Write,
     net::{SocketAddr, TcpListener, TcpStream},
     time::SystemTime,
 };
 
-use clap::{App, Arg};
-use log::{info, error};
+use log::{error, info};
 use tracing::{debug, instrument};
 use tracing_subscriber::fmt;
 
-use shared::{MessageType, receive_message};
+use shared::{receive_message, MessageType};
 
 #[derive(Debug)]
 struct Server {
+    #[allow(dead_code)] // Allowing unused code for the address field for future use
     address: Option<String>,
 }
 
 impl Server {
+    // Constructor to create a new server instance
     fn new(address: Option<String>) -> Self {
         Server { address }
     }
 
     #[instrument]
-    fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn start(&self, bind_address: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
         // Initialize tracing
         fmt::init();
 
-        let listener = match &self.address {
+        // Create a TcpListener based on the provided or default bind_address
+        let listener = match bind_address {
+            Some(addr) if addr == "0.0.0.0" => TcpListener::bind("0.0.0.0:11111")?, // Allow connections from any IP
             Some(addr) => TcpListener::bind(addr)?,
-            None => TcpListener::bind("0.0.0.0:0")?, // Bind to any IP
+            None => TcpListener::bind("localhost:11111")?, // Default to localhost:11111
         };
 
-        info!("Server listening on {}", listener.local_addr().unwrap());
+        // Log the address the server is listening on
+        info!("Server listening on {:?}", listener.local_addr().unwrap());
 
+        // HashMap to store connected clients
         let mut clients: HashMap<SocketAddr, TcpStream> = HashMap::new();
 
+        // Main loop for handling incoming connections
         for stream in listener.incoming() {
             let stream = stream?;
             let addr = stream.peer_addr()?;
             clients.insert(addr, stream.try_clone()?);
 
+            // Handle messages from the connected client
             self.handle_client(clients.get(&addr).unwrap().try_clone()?, &mut clients);
         }
 
@@ -51,7 +58,9 @@ impl Server {
 
     #[instrument]
     fn handle_client(&self, mut stream: TcpStream, clients: &mut HashMap<SocketAddr, TcpStream>) {
+        // Attempt to receive a message from the client
         if let Some(message) = receive_message(&mut stream) {
+            // Process the received message based on its type
             match message {
                 MessageType::File(ref filename, ref content) => {
                     self.receive_file(&filename, &content, "../files/");
@@ -64,6 +73,7 @@ impl Server {
                     info!("Received text message: {}", text);
                 }
                 MessageType::Quit => {
+                    // Remove the client from the HashMap on Quit message
                     let _ = clients.remove(&stream.peer_addr().unwrap());
                     info!("Client disconnected");
                 }
@@ -71,45 +81,39 @@ impl Server {
 
             debug!("Received message: {:?}", message);
         } else {
+            // Log an error if there is an issue receiving the message
             error!("Error receiving message from client");
         }
     }
 
     #[instrument]
     fn receive_file(&self, filename: &str, content: &[u8], directory: &str) {
+        // Create a unique filepath based on timestamp and filename
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_secs();
         let filepath = format!("{}{}_{}", directory, timestamp, filename);
 
+        // Write the received file content to a new file
         let mut file = File::create(&filepath).unwrap();
         file.write_all(content).unwrap();
 
+        // Log the received file information
         info!("Received file: {}", filepath);
     }
 }
 
 fn main() {
-    // Parse command-line arguments using Clap
-    let matches = App::new("Server")
-        .version("1.0")
-        .author("Your Name")
-        .about("Server application for the chat server")
-        .arg(
-            Arg::with_name("address")
-                .short("a")
-                .long("address")
-                .value_name("ADDRESS")
-                .help("Sets the server address")
-                .takes_value(true),
-        )
-        .get_matches();
+    // Collect CL arguments
+    let args: Vec<String> = env::args().collect();
 
-    let address = matches.value_of("address").map(String::from);
+    // Create a new Server instance with no specified address
+    let server = Server::new(None);
 
-    let server = Server::new(address);
-    if let Err(err) = server.start() {
+    // Start the server with the provided or default bind_address
+    if let Err(err) = server.start(args.get(1).map(|s| s.as_str())) {
+        // Log an error if there is an issue starting the server
         error!("Server error: {}", err);
     }
 }
