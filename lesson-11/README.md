@@ -38,17 +38,13 @@ cargo run --release --bin server [OPTIONS]
 ### Structure
 
 - **Server (`server` directory)**:
-  - `main.rs`: Entry point for the server application.
-  - `server.rs`: Server implementation with multi-client support.
-  - ...
+  - `main.rs`: Entry point for the server application & implementation with multi-client support.
 
 - **Client (`client` directory)**:
-  - `main.rs`: Entry point for the client application.
-  - ...
+  - `main.rs`: Entry point for the client application & implementation with multi-client support.
 
 - **Shared (`shared` directory)**:
-  - `message.rs`: Definition of message types for communication between server and client.
-  - ...
+  - `lib.rs`: Shared functionality of server and client. Custom error handling.
 
 ### Dependencies
 
