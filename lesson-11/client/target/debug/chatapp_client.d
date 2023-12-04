@@ -1,1 +1,0 @@
-C:\Users\jan.vais\Desktop\codebase\!rust_dev_course\lesson-09\chatapp_client\target\debug\chatapp_client.exe: C:\Users\jan.vais\Desktop\codebase\!rust_dev_course\lesson-09\chatapp_client\src\client.rs
