@@ -1,22 +1,26 @@
+// client/src/main.rs
 use std::{
     env,
     error::Error,
-    fmt,
-    fs::File,
-    io::{self, Cursor, Read, Write},
+    io::{self, Cursor, Write},
     net::TcpStream,
     process,
 };
 
+use log::info;
 use image::ImageOutputFormat;
-use serde_derive::{Deserialize, Serialize};
-use shared::{MessageType, OperationError, send_file, send_message, read_and_convert_image};
+use tracing_subscriber::fmt;
+
+use shared::{MessageType, send_file};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Initialize tracing
+    fmt::init();
+
     let args: Vec<String> = env::args().collect();
 
     let (hostname, port) = match args.len() {
-        1 => ("localhost".to_string(), 11111), // Defaul values
+        1 => ("localhost".to_string(), 11111),
         3 => (args[1].clone(), args[2].parse().unwrap()),
         _ => {
             println!("Usage: {} [hostname] [port]", args[0]);
@@ -27,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let server_address = format!("{}:{}", hostname, port);
     let mut stream = TcpStream::connect(server_address.clone())?;
 
-    println!("Connected to server on {}", server_address);
+    info!("Connected to server on {}", server_address);
 
     // Read user input and send messages to the server
     loop {
@@ -53,17 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Serialize and send the message to the server
         let serialized_message = bincode::serialize(&message)?;
-        // DEBUG:
-        // println!("serialized_message: {:?}", &serialized_message);
-        //
         stream.write_all(&serialized_message)?;
-
-        // DEBUG info
-        //if let Err(err) = stream.write_all(&serialized_message) {
-        //    eprintln!("Error sending message: {}", err);
-        //} else {
-        //    println!("Message successfully sent to the server");
-        //}
 
         // If the user wants to quit, break the loop
         if let MessageType::Quit = message {
@@ -84,21 +78,4 @@ fn read_and_convert_image(path: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     image.write_to(&mut cursor, ImageOutputFormat::Png)?;
 
     Ok(png_bytes)
-}
-
-// Helper function to send a file to the server
-fn send_file(stream: &mut TcpStream, path: &str) -> Result<(), Box<dyn Error>> {
-    let mut file = File::open(path)?;
-    let mut content = Vec::new();
-    file.read_to_end(&mut content)?;
-
-    let message = MessageType::File(path.to_string());
-    let serialized_message = bincode::serialize(&message)?;
-    stream.write_all(&serialized_message)?;
-    // DEBUG:
-    // Print success message to the command line
-    println!("File '{}' successfully sent to the server", path);
-    //
-
-    Ok(())
 }
