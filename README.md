@@ -10,3 +10,5 @@ Exercise 4: [Advancing our program with multi-threading and CVS file reading](le
 Exercise 5: [Network I/O](lesson-09)
 
 Exercise 6: [Cargo crates, shared func, docs & refactoring](lesson-11)
+
+Exercise 7: [Error handling - custom error types](lesson-13)
