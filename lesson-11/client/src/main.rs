@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Parse command-line arguments using Clap
     let matches = App::new("Client")
         .version("1.0")
-        .author("Your Name")
+        .author("Jan Vais")
         .about("Client application for the chat server")
         .arg(
             Arg::with_name("hostname")

@@ -52,4 +52,3 @@ cargo run --release --bin server [OPTIONS]
 - `log` and `tracing`: Logging and structured logging.
 - `image`: Image processing library.
 - `serde` and `bincode`: Serialization and deserialization.
-- ...
