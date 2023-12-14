@@ -1,17 +1,21 @@
 // server/src/main.rs
 use std::{
     collections::HashMap,
-    env,
     fs::File,
-    io::{self, Write},
-    net::{SocketAddr, TcpListener, TcpStream},
+    io::Write,
     time::SystemTime,
+    sync::Arc,
 };
 
 use anyhow::{Context, Result};
-use log::{error, info};
-use tracing::{debug, instrument};
-use tracing_subscriber::fmt;
+use log::info;
+use tracing::instrument;
+
+use tokio::sync::Mutex;
+use async_std::net::TcpListener;
+use async_std::stream::StreamExt;
+use async_std::task;
+use serde_derive::{Deserialize, Serialize};
 
 use shared::{receive_message, MessageType};
 
@@ -21,53 +25,46 @@ struct Server {
     address: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Database {
+    // ... your database fields
+}
+
 impl Server {
-    // Constructor to create a new server instance
     fn new(address: Option<String>) -> Self {
         Server { address }
     }
 
-    #[instrument]
-    fn start(&self, bind_address: Option<&str>) -> Result<(), anyhow::Error> {
-        // Initialize tracing
-        fmt::init();
+    async fn start(&self, bind_address: Option<&str>) -> Result<(), anyhow::Error> {
+        let listener = TcpListener::bind(bind_address.unwrap_or("localhost:11111")).await?;
+        println!("Server listening on {:?}", listener.local_addr()?);
 
-        // Create a TcpListener based on the provided or default bind_address
-        let listener = match bind_address {
-            Some(addr) if addr == "0.0.0.0" => TcpListener::bind("0.0.0.0:11111")?, // Allow connections from any IP
-            Some(addr) => TcpListener::bind(addr)?,
-            None => TcpListener::bind("localhost:11111")?, // Default to localhost:11111
-        };
+        let database = Arc::new(Mutex::new(Database::new())); // Use Arc<Mutex<Database>> for concurrent access
 
-        // Log the address the server is listening on
-        info!("Server listening on {:?}", listener.local_addr()?);
+        let clients: HashMap<_, _> = HashMap::new();
 
-        // HashMap to store connected clients
-        let mut clients: HashMap<SocketAddr, TcpStream> = HashMap::new();
-
-        // Main loop for handling incoming connections
-        for stream in listener.incoming() {
+        while let Some(stream) = listener.incoming().next().await {
             let stream = stream?;
-            let addr = stream.peer_addr()?;
-            clients.insert(addr, stream.try_clone()?);
+            let _addr = stream.peer_addr()?;
+            let cloned_stream = stream.clone();
+            let mut clients = clients.clone();
+            let database = database.clone();
 
-            // Handle messages from the connected client
-            if let Err(err) =
-                self.handle_client(clients.get(&addr).unwrap().try_clone()?, &mut clients)
-            {
-                error!("Error handling client: {}", err);
-            }
+            task::spawn(async move {
+                if let Err(err) = Self::handle_client(cloned_stream, &mut clients, &database).await {
+                    println!("Error handling client: {}", err);
+                }
+            });
         }
 
         Ok(())
     }
 
-    #[instrument]
-    fn handle_client(
-        &self,
-        mut stream: TcpStream,
-        clients: &mut HashMap<SocketAddr, TcpStream>,
-    ) -> Result<()> {
+    async fn handle_client(
+        stream: async_std::net::TcpStream,
+        clients: &mut HashMap<async_std::net::SocketAddr, async_std::net::TcpStream>,
+        database: &Mutex<Database>,
+    ) -> Result<(), anyhow::Error> {
         // Attempt to receive a message from the client
         if let Some(message) = receive_message(&mut stream) {
             // Process the received message based on its type
@@ -95,6 +92,10 @@ impl Server {
             error!("Error receiving message from client");
         }
 
+        // Use the database
+        let mut db = database.lock().await;
+        db.save_message("example_user", "Hello, world!");
+
         Ok(())
     }
 
@@ -120,16 +121,22 @@ impl Server {
     }
 }
 
-fn main() {
-    // Collect CL arguments
-    let args: Vec<String> = env::args().collect();
+impl Database {
+    fn new() -> Self {
+        Database {
+            // ... initialize your database
+        }
+    }
 
-    // Create a new Server instance with no specified address
+    fn save_message(&mut self, user: &str, message: &str) {
+        // ... save the message to the database
+    }
+}
+
+#[tokio::main]
+async fn main() {
     let server = Server::new(None);
-
-    // Start the server with the provided or default bind_address
-    if let Err(err) = server.start(args.get(1).map(|s| s.as_str())) {
-        // Log an error if there is an issue starting the server
-        error!("Server error: {}", err);
+    if let Err(err) = server.start(None).await {
+        println!("Server error: {}", err);
     }
 }

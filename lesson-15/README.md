@@ -17,8 +17,8 @@ This is a simple chat application implemented in Rust, consisting of a server an
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/JV91/rust_dev_course/tree/master/lesson-11
-    cd lesson-11
+    git clone https://github.com/JV91/rust_dev_course/tree/master/lesson-15
+    cd lesson-15
     ```
 
 2. Build the server and client:
@@ -52,4 +52,3 @@ cargo run --release --bin server [OPTIONS]
 - `log` and `tracing`: Logging and structured logging.
 - `image`: Image processing library.
 - `serde` and `bincode`: Serialization and deserialization.
-- ...
